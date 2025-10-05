@@ -75,6 +75,7 @@ fr-CA:
       filters:
         action: Choisir l'action à effectuer quand un message correspond au filtre
         actions:
+          blur: Cacher les médias derrière un avertissement, sans cacher le texte
           hide: Cacher complètement le contenu filtré, faire comme s'il n'existait pas
           warn: Cacher le contenu filtré derrière un avertissement mentionnant le nom du filtre
       form_admin_settings:
@@ -147,7 +148,6 @@ fr-CA:
         min_age: Ne doit pas être en dessous de l’âge minimum requis par les lois de votre juridiction.
       user:
         chosen_languages: Lorsque coché, seuls les messages dans les langues sélectionnées seront affichés sur les fils publics
-        date_of_birth: Nous devons nous assurer que vous avez au moins %{age} pour utiliser Mastodon. Nous ne conserverons pas ces informations.
         role: Le rôle définit quelles autorisations a l'utilisateur⋅rice.
       user_role:
         color: Couleur à attribuer au rôle dans l'interface, au format hexadécimal RVB
@@ -227,7 +227,7 @@ fr-CA:
         setting_auto_play_gif: Lire automatiquement les GIFs animés
         setting_boost_modal: Demander confirmation avant de partager un message
         setting_default_language: Langue de publication
-        setting_default_privacy: Confidentialité des messages
+        setting_default_quote_policy: Autoriser les citations pour
         setting_default_sensitive: Toujours marquer les médias comme sensibles
         setting_delete_modal: Demander confirmation avant de supprimer un message
         setting_disable_hover_cards: Désactiver l'aperçu du profil au survol
@@ -260,6 +260,7 @@ fr-CA:
         name: Mot-clic
       filters:
         actions:
+          blur: Masquer les médias derrière un avertissement
           hide: Cacher complètement
           warn: Cacher derrière un avertissement
       form_admin_settings:

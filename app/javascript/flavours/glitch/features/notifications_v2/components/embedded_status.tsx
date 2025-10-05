@@ -6,6 +6,7 @@ import { useHistory } from 'react-router-dom';
 
 import type { List as ImmutableList, RecordOf } from 'immutable';
 
+import { AnimateEmojiProvider } from '@/flavours/glitch/components/emoji/context';
 import BarChart4BarsIcon from '@/material-icons/400-24px/bar_chart_4_bars.svg?react';
 import PhotoLibraryIcon from '@/material-icons/400-24px/photo_library.svg?react';
 import { toggleStatusSpoilers } from 'flavours/glitch/actions/statuses';
@@ -13,7 +14,6 @@ import { Avatar } from 'flavours/glitch/components/avatar';
 import { ContentWarning } from 'flavours/glitch/components/content_warning';
 import { DisplayName } from 'flavours/glitch/components/display_name';
 import { Icon } from 'flavours/glitch/components/icon';
-import type { Status } from 'flavours/glitch/models/status';
 import { useAppSelector, useAppDispatch } from 'flavours/glitch/store';
 
 import { EmbeddedStatusContent } from './embedded_status_content';
@@ -27,9 +27,7 @@ export const EmbeddedStatus: React.FC<{ statusId: string }> = ({
   const clickCoordinatesRef = useRef<[number, number] | null>();
   const dispatch = useAppDispatch();
 
-  const status = useAppSelector(
-    (state) => state.statuses.get(statusId) as Status | undefined,
-  );
+  const status = useAppSelector((state) => state.statuses.get(statusId));
 
   const account = useAppSelector((state) =>
     state.accounts.get(status?.get('account') as string),
@@ -79,32 +77,6 @@ export const EmbeddedStatus: React.FC<{ statusId: string }> = ({
     [clickCoordinatesRef, statusId, account, history],
   );
 
-  const handleMouseEnter = useCallback<React.MouseEventHandler<HTMLDivElement>>(
-    ({ currentTarget }) => {
-      const emojis =
-        currentTarget.querySelectorAll<HTMLImageElement>('.custom-emoji');
-
-      for (const emoji of emojis) {
-        const newSrc = emoji.getAttribute('data-original');
-        if (newSrc) emoji.src = newSrc;
-      }
-    },
-    [],
-  );
-
-  const handleMouseLeave = useCallback<React.MouseEventHandler<HTMLDivElement>>(
-    ({ currentTarget }) => {
-      const emojis =
-        currentTarget.querySelectorAll<HTMLImageElement>('.custom-emoji');
-
-      for (const emoji of emojis) {
-        const newSrc = emoji.getAttribute('data-static');
-        if (newSrc) emoji.src = newSrc;
-      }
-    },
-    [],
-  );
-
   const handleContentWarningClick = useCallback(() => {
     dispatch(toggleStatusSpoilers(statusId));
   }, [dispatch, statusId]);
@@ -125,14 +97,12 @@ export const EmbeddedStatus: React.FC<{ statusId: string }> = ({
   ).size;
 
   return (
-    <div
+    <AnimateEmojiProvider
       className='notification-group__embedded-status'
       role='button'
       tabIndex={-1}
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
     >
       <div className='notification-group__embedded-status__account'>
         <Avatar account={account} size={16} />
@@ -179,6 +149,6 @@ export const EmbeddedStatus: React.FC<{ statusId: string }> = ({
           )}
         </div>
       )}
-    </div>
+    </AnimateEmojiProvider>
   );
 };

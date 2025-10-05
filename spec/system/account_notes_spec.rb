@@ -11,21 +11,18 @@ RSpec.describe 'Account notes', :inline_jobs, :js, :streaming do
   let(:finished_onboarding) { true }
 
   let!(:other_account) { Fabricate(:account) }
+  let(:note_text) { 'This is a personal note' }
 
   before { as_a_logged_in_user }
 
   it 'can be written and viewed' do
     visit_profile(other_account)
 
-    note_text = 'This is a personal note'
-    fill_in 'Click to add note', with: note_text
+    fill_in frontend_translations('account_note.placeholder'), with: note_text
 
     # This is a bit awkward since there is no button to save the change
     # The easiest way is to send ctrl+enter ourselves
     find_field(class: 'account__header__account-note__content').send_keys [:control, :enter]
-
-    expect(page)
-      .to have_css('.account__header__account-note .inline-alert', text: 'SAVED')
 
     expect(page)
       .to have_css('.account__header__account-note__content', text: note_text)
