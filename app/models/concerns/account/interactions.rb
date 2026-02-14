@@ -55,6 +55,7 @@ module Account::Interactions
     rel.languages    = languages unless languages.nil?
 
     rel.save! if rel.changed?
+    try(:invalidate_mute_boosts_cache)
 
     rel
   end
@@ -68,6 +69,7 @@ module Account::Interactions
     rel.languages    = languages unless languages.nil?
 
     rel.save! if rel.changed?
+    try(:invalidate_mute_boosts_cache)
 
     rel
   end
@@ -100,6 +102,9 @@ module Account::Interactions
   def unfollow!(other_account)
     follow = active_relationships.find_by(target_account: other_account)
     follow&.destroy
+    try(:invalidate_mute_boosts_cache)
+
+    follow
   end
 
   def unblock!(other_account)
@@ -123,7 +128,11 @@ module Account::Interactions
   end
 
   def following?(other_account)
-    active_relationships.exists?(target_account: other_account)
+    other_id = other_account.is_a?(Account) ? other_account.id : other_account
+
+    preloaded_relation(:following, other_id) do
+      active_relationships.exists?(target_account: other_account)
+    end
   end
 
   def following_anyone?
@@ -139,15 +148,33 @@ module Account::Interactions
   end
 
   def blocking?(other_account)
-    block_relationships.exists?(target_account: other_account)
+    other_id = other_account.is_a?(Account) ? other_account.id : other_account
+
+    preloaded_relation(:blocking, other_id) do
+      block_relationships.exists?(target_account: other_account)
+    end
+  end
+
+  def blocked_by?(other_account)
+    other_id = other_account.is_a?(Account) ? other_account.id : other_account
+
+    preloaded_relation(:blocked_by, other_id) do
+      other_account.block_relationships.exists?(target_account: self)
+    end
   end
 
   def domain_blocking?(other_domain)
-    domain_blocks.exists?(domain: other_domain)
+    preloaded_relation(:domain_blocking_by_domain, other_domain) do
+      domain_blocks.exists?(domain: other_domain)
+    end
   end
 
   def muting?(other_account)
-    mute_relationships.exists?(target_account: other_account)
+    other_id = other_account.is_a?(Account) ? other_account.id : other_account
+
+    preloaded_relation(:muting, other_id) do
+      mute_relationships.exists?(target_account: other_account)
+    end
   end
 
   def muting_conversation?(conversation)
@@ -225,5 +252,11 @@ module Account::Interactions
 
   def normalized_domain(domain)
     TagManager.instance.normalize_domain(domain)
+  end
+
+  private
+
+  def preloaded_relation(type, key)
+    @preloaded_relations && @preloaded_relations[type] ? @preloaded_relations[type][key].present? : yield
   end
 end
