@@ -16,6 +16,7 @@ class REST::StatusSerializer < ActiveModel::Serializer
   attribute :bookmarked, if: :current_user?
   attribute :pinned, if: :pinnable?
   attribute :local_only, if: :local?
+  attribute :sticky, if: :current_user?
   has_many :filtered, serializer: REST::FilterResultSerializer, if: :current_user?
 
   attribute :content, unless: :source_requested?
@@ -30,6 +31,7 @@ class REST::StatusSerializer < ActiveModel::Serializer
   has_many :ordered_mentions, key: :mentions
   has_many :tags
   has_many :emojis, serializer: REST::CustomEmojiSerializer
+  has_many :tagged_collections, serializer: REST::CollectionSerializer
 
   # Due to a ActiveModel::Serializer quirk, if you change any of the following, have a look at
   # updating `app/serializers/rest/shallow_status_serializer.rb` as well
@@ -39,6 +41,10 @@ class REST::StatusSerializer < ActiveModel::Serializer
   has_one :quote_approval
 
   delegate :local?, to: :object
+
+  def sticky
+    object.sticky?
+  end
 
   def quote
     object.quote if object.quote&.acceptable?
@@ -170,6 +176,10 @@ class REST::StatusSerializer < ActiveModel::Serializer
     object.active_mentions.to_a.sort_by(&:id)
   end
 
+  def tagged_collections
+    object.tagged_objects.filter_map { |tagged_object| tagged_object.object if tagged_object.ap_type == 'FeaturedCollection' }
+  end
+
   def quote_approval
     {
       automatic: object.proper.quote_policy_as_keys(:automatic),
@@ -212,13 +222,5 @@ class REST::StatusSerializer < ActiveModel::Serializer
     end
   end
 
-  class TagSerializer < ActiveModel::Serializer
-    include RoutingHelper
-
-    attributes :name, :url
-
-    def url
-      tag_url(object)
-    end
-  end
+  class TagSerializer < REST::ShallowTagSerializer; end
 end

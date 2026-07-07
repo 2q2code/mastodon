@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types';
 
-import { defineMessages, injectIntl } from 'react-intl';
+import { defineMessages } from 'react-intl';
 
 import { withRouter } from 'react-router-dom';
 
@@ -25,10 +25,12 @@ import { Dropdown } from 'flavours/glitch/components/dropdown_menu';
 import { me, quickBoosting } from '../../initial_state';
 
 import { IconButton } from '../icon_button';
+import { injectIntl } from '../intl';
 import { RelativeTimestamp } from '../relative_timestamp';
 import { BoostButton } from '../status/boost_button';
 import { RemoveQuoteHint } from './remove_quote_hint';
 import { quoteItemState, selectStatusState } from '../status/boost_button_utils';
+
 
 const messages = defineMessages({
   delete: { id: 'status.delete', defaultMessage: 'Delete' },
@@ -63,6 +65,8 @@ const messages = defineMessages({
   openOriginalPage: { id: 'account.open_original_page', defaultMessage: 'Open original page' },
   revokeQuote: { id: 'status.revoke_quote', defaultMessage: 'Remove my post from @{name}’s post' },
   quotePolicyChange: { id: 'status.quote_policy_change', defaultMessage: 'Change who can quote' },
+  sticky: { id: 'status.sticky.make_sticky', defaultMessage: 'Make this post globally sticky' },
+  unsticky: { id: 'status.sticky.unsticky', defaultMessage: 'Unsticky this post' }
 });
 
 const mapStateToProps = (state, { status }) => {
@@ -97,6 +101,7 @@ class StatusActionBar extends ImmutablePureComponent {
     onFilter: PropTypes.func,
     onAddFilter: PropTypes.func,
     onInteractionModal: PropTypes.func,
+    onSticky: PropTypes.func,
     withDismiss: PropTypes.bool,
     withCounters: PropTypes.bool,
     showReplyCount: PropTypes.bool,
@@ -121,7 +126,7 @@ class StatusActionBar extends ImmutablePureComponent {
     if (signedIn) {
       this.props.onReply(this.props.status);
     } else {
-      this.props.onInteractionModal(this.props.status);
+      this.props.onInteractionModal(this.props.status, 'reply');
     }
   };
 
@@ -143,7 +148,7 @@ class StatusActionBar extends ImmutablePureComponent {
     if (signedIn) {
       this.props.onFavourite(this.props.status, e);
     } else {
-      this.props.onInteractionModal(this.props.status);
+      this.props.onInteractionModal(this.props.status, 'favourite');
     }
   };
 
@@ -220,6 +225,11 @@ class StatusActionBar extends ImmutablePureComponent {
     this.props.onFilter();
   };
 
+  handleSticky = () => {
+    this.props.onSticky(this.props.status);
+  };
+
+
   render () {
     const { status, statusQuoteState, quotedAccountId, contextType, intl, withDismiss, withCounters, showReplyCount, scrollKey } = this.props;
     const { signedIn, permissions } = this.props.identity;
@@ -230,6 +240,7 @@ class StatusActionBar extends ImmutablePureComponent {
     const writtenByMe        = status.getIn(['account', 'id']) === me;
     const isRemote           = status.getIn(['account', 'username']) !== status.getIn(['account', 'acct']);
     const isQuotingMe        = quotedAccountId === me;
+    const isSticky = status.get('sticky')
 
     let menu = [];
     let reblogIcon = 'retweet';
@@ -317,6 +328,16 @@ class StatusActionBar extends ImmutablePureComponent {
           }
         }
       }
+
+      // Sticky/unsticky post
+      if (!isRemote && ((permissions & PERMISSION_MANAGE_USERS) === PERMISSION_MANAGE_USERS)) {
+        menu.push(null);
+        if (isSticky){
+          menu.push({ text: intl.formatMessage(messages.unsticky), action: this.handleSticky })
+        } else {
+          menu.push({ text: intl.formatMessage(messages.sticky), action: this.handleSticky })
+        }
+      }
     }
 
     let replyIcon;
@@ -376,22 +397,29 @@ class StatusActionBar extends ImmutablePureComponent {
               status={status}
               needsStatusRefresh={quickBoosting && status.get('quote_approval') === null}
               items={menu}
-              icon='ellipsis-h'
               size={18}
-              iconComponent={MoreHorizIcon}
               direction='right'
               ariaLabel={intl.formatMessage(messages.more)}
               onOpen={() => {
                 dismissQuoteHint();
                 return true;
               }}
-            />
+            >
+              <IconButton
+                className='status__action-bar__button'
+                icon='ellipsis-h'
+                iconComponent={MoreHorizIcon}
+                title={intl.formatMessage(messages.more)}
+              />
+            </Dropdown>
           )}
         </RemoveQuoteHint>
 
         <div className='status__action-bar-spacer' />
         <a href={status.get('url')} className='status__relative-time' target='_blank' rel='noopener'>
-          <RelativeTimestamp timestamp={status.get('created_at')} />{status.get('edited_at') && <abbr title={intl.formatMessage(messages.edited, { date: intl.formatDate(status.get('edited_at'), { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' }) })}> *</abbr>}
+          <RelativeTimestamp
+            timestamp={status.get('created_at')}
+          />{status.get('edited_at') && <abbr title={intl.formatMessage(messages.edited, { date: intl.formatDate(status.get('edited_at'), { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' }) })}> *</abbr>}
         </a>
       </div>
     );

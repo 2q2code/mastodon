@@ -28,6 +28,7 @@ import {
   deleteStatus,
   toggleStatusSpoilers,
   toggleStatusCollapse,
+  toggleSticky,
   editStatus,
   translateStatus,
   undoStatusTranslation,
@@ -82,7 +83,7 @@ const mapDispatchToProps = (dispatch, { contextType }) => ({
       }
     });
   },
-  
+
   onQuote (status) {
     dispatch(quoteComposeById(status.get('id')));
   },
@@ -229,14 +230,19 @@ const mapDispatchToProps = (dispatch, { contextType }) => ({
     });
   },
 
-  onInteractionModal (status) {
+  onInteractionModal (status, intent) {
     dispatch(openModal({
       modalType: 'INTERACTION',
       modalProps: {
+        intent,
         accountId: status.getIn(['account', 'id']),
         url: status.get('uri'),
       },
     }));
+  },
+
+  onSticky (status) {
+    dispatch(toggleSticky(status.get('id')));
   },
 
 });

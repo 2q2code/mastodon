@@ -7,7 +7,7 @@ import api from '../api';
 import { showAlert } from './alerts';
 import { ensureComposeIsVisible, setComposeToStatus } from './compose';
 import { importFetchedStatus, importFetchedAccount } from './importer';
-import { fetchContext } from './statuses_typed';
+import { fetchContext, sticky, unsticky } from './statuses_typed';
 import { deleteFromTimelines } from './timelines';
 
 export * from './statuses_typed';
@@ -109,7 +109,7 @@ export function fetchStatusFail(id, error, skipLoading, parentQuotePostId) {
   };
 }
 
-export function redraft(status, raw_text, content_type) {
+export function redraft(status, raw_text, content_type, quoted_status_id = null) {
   return (dispatch, getState) => {
     const maxOptions = getState().server.getIn(['server', 'configuration', 'polls', 'max_options']);
 
@@ -117,6 +117,7 @@ export function redraft(status, raw_text, content_type) {
       type: REDRAFT,
       status,
       raw_text,
+      quoted_status_id,
       content_type,
       maxOptions,
     });
@@ -135,7 +136,7 @@ export const editStatus = (id) => (dispatch, getState) => {
   api().get(`/api/v1/statuses/${id}/source`).then(response => {
     dispatch(fetchStatusSourceSuccess());
     ensureComposeIsVisible(getState);
-    dispatch(setComposeToStatus(status, response.data.text, response.data.spoiler_text, response.data.content_type));
+    dispatch(setComposeToStatus(status, response.data.text, response.data.spoiler_text, response.data.content_type, response.data.quote?.quoted_status?.id));
   }).catch(error => {
     dispatch(fetchStatusSourceFail(error));
   });
@@ -363,6 +364,17 @@ export const navigateToStatus = (statusId) => {
 
     if (acct) {
       browserHistory.push(`/@${acct}/${statusId}`);
+    }
+  };
+};
+
+export const toggleSticky = (statusId) => {
+  return (dispatch, getState) => {
+    const isSticky = getState().statuses.getIn([statusId, 'sticky']);
+    if (isSticky) {
+      dispatch(unsticky({statusId}))
+    } else {
+      dispatch(sticky({statusId}))
     }
   };
 };
